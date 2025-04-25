@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embossed Control Panel</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Embossed Control Panel</h1>
+        <p>A modern interface with 3D embossed elements</p>
+    </header>
+    <div class="container">
+        <div class="card-horizontal preset-controls">
+            <div class="icon">💾</div>
+            <input type="text" id="preset-name" placeholder="Preset name" class="preset-input">
+            <button id="save-preset" class="preset-button">Save</button>
+            <select id="preset-select" class="preset-select">
+                <option value="">Load a preset...</option>
+            </select>
+            <button id="delete-preset" class="preset-button delete">Delete</button>
+        </div>
+        <section class="grid" id="sound-grid">
+            <!-- Cards will be generated dynamically -->
+        </section>
+        <div class="card-horizontal">
+            <div class="icon">🎛️</div>
+            <input type="range" class="slider-horizontal master-volume" min="0" max="100" value="70">
+        </div>
+        <!-- Add this section after the horizontal card in your HTML -->
+        
+    </div>
+    <footer>
+        <p>&copy; 2023 Embossed Control Panel. All rights reserved.</p>
+    </footer>
+    <script src="audio-player.js" type="module"></script>
+</body>
+</html
