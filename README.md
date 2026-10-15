@@ -17,6 +17,20 @@ Open `index.html` in a browser. No build step, no server, no dependencies.
 | Birds | volume + intensity dial | scattered one-shots |
 | Frogs | volume + intensity dial | scattered one-shots |
 
+## Sleep timer
+
+Set hours and minutes, or tap a quick chip (15m–2h). The countdown shows as
+`mm:ss`, switching to `h:mm:ss` past the hour.
+
+When the timer expires it does not cut the audio dead — the mix fades out over the
+final 12 seconds, then every channel stops and resets. The master level you had
+before the fade is remembered and restored, so starting a new timer brings the mix
+back rather than leaving you with a silent page. Cancelling during the fade hands
+the level straight back.
+
+The deadline is stored as a wall-clock timestamp, not a decremented counter, so a
+backgrounded or throttled tab cannot make the countdown drift.
+
 ## Interaction
 
 - **Volume** — drag the vertical slider. On Forest and River (which have no

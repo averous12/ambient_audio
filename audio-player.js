@@ -41,7 +41,15 @@ const ICONS = {
     master: ICON(`
         <path d="M5 21V14"/><path d="M5 10V3"/><path d="M12 21v-9"/>
         <path d="M12 8V3"/><path d="M19 21v-5"/><path d="M19 12V3"/>
-        <path d="M2.5 14h5"/><path d="M9.5 8h5"/><path d="M16.5 16h5"/>`)
+        <path d="M2.5 14h5"/><path d="M9.5 8h5"/><path d="M16.5 16h5"/>`),
+    timer: ICON(`
+        <circle cx="12" cy="13.5" r="7.5"/>
+        <path d="M12 9.5v4l2.5 1.5"/>
+        <path d="M9.5 2.5h5"/>`),
+    play: ICON(`
+        <path d="M7 4.5v15l12-7.5z"/>`),
+    pause: ICON(`
+        <path d="M9 4.5v15"/><path d="M15 4.5v15"/>`)
 };
 
 const SOUND_CONFIG = {
@@ -143,15 +151,43 @@ const SOUND_CONFIG = {
 const KNOB_MIN_ANGLE = -135;                          // 0   → 7:30 position
 const KNOB_MAX_ANGLE = 135;                           // 100 → 4:30 position
 const KNOB_SWEEP = KNOB_MAX_ANGLE - KNOB_MIN_ANGLE;   // 270°
-const FADE_MS = 240;
+const FADE_MS = 240;                                  // start/stop ramp
+const TIMER_FADE_MS = 12000;                           // sleep fade-out length
+const MAX_TIMER_MIN = 23 * 60 + 59;
+const MASTER_DEFAULT = 70;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// mm:ss for short waits, h:mm:ss once there is an hour on the clock.
+function formatDuration(ms) {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
+// Coerce a number input back into range, tolerating empty/garbage input.
+function setFieldValue(input, lo, hi) {
+    const n = parseInt(input.value, 10);
+    input.value = Number.isFinite(n) ? clamp(n, lo, hi) : lo;
+}
 
 class AudioPlayer {
     constructor() {
         this.sounds = {};
         this.masterVolume = 0.7;
         this.currentPresetId = null;
+        // Sleep timer state: wall-clock deadline rather than a decremented
+        // counter, so a throttled background tab cannot make it drift.
+        this.timer = {
+            endsAt: null,
+            remainingMs: 0,
+            tickId: null,
+            fadingOut: false,
+            warned: false
+        };
         this.init();
     }
 
@@ -182,6 +218,7 @@ class AudioPlayer {
         });
 
         this.setupPresetControls();
+        this.setupTimerControls();
         this.loadPresetList();
         this.updateStatus();
     }
@@ -610,6 +647,226 @@ class AudioPlayer {
         }, { passive: false });
 
         this.paintKnob(knob, 0);
+    }
+
+    // ── sleep timer ────────────────────────────────────────────────────────
+    setupTimerControls() {
+        this.timerEls = {
+            hours: document.getElementById('timer-hours'),
+            minutes: document.getElementById('timer-minutes'),
+            toggle: document.getElementById('timer-toggle'),
+            readout: document.getElementById('timer-readout')
+        };
+
+        this.timerEls.toggle.addEventListener('click', () => {
+            if (this.timerRunning()) this.cancelTimer();
+            else this.startTimerFromFields();
+        });
+
+        // Quick-duration chips write into the fields and start immediately.
+        document.querySelectorAll('[data-timer-min]').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const total = parseInt(chip.dataset.timerMin, 10);
+                this.setTimerFields(total);
+                this.startTimer(total);
+            });
+        });
+
+        // Typing a duration while running re-arms with the new value.
+        [this.timerEls.hours, this.timerEls.minutes].forEach(input => {
+            input.addEventListener('change', () => this.normaliseTimerFields());
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.normaliseTimerFields();
+                    const total = this.timerFieldMinutes();
+                    if (total > 0) this.startTimer(total);
+                }
+            });
+        });
+
+        // Keep the readout honest if the tab was backgrounded mid-countdown.
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.timerRunning()) this.renderTimer();
+        });
+    }
+
+    timerRunning() {
+        return this.timer.endsAt !== null || this.timer.fadingOut;
+    }
+
+    timerFieldMinutes() {
+        const h = clamp(parseInt(this.timerEls.hours.value, 10) || 0, 0, 23);
+        const m = clamp(parseInt(this.timerEls.minutes.value, 10) || 0, 0, 59);
+        return h * 60 + m;
+    }
+
+    setTimerFields(totalMinutes) {
+        this.timerEls.hours.value = Math.floor(totalMinutes / 60);
+        this.timerEls.minutes.value = totalMinutes % 60;
+    }
+
+    normaliseTimerFields() {
+        setFieldValue(this.timerEls.hours, 0, 23);
+        setFieldValue(this.timerEls.minutes, 0, 59);
+    }
+
+    startTimerFromFields() {
+        this.normaliseTimerFields();
+        const total = this.timerFieldMinutes();
+        if (total <= 0) {
+            // Rather than silently doing nothing, say so in the readout.
+            this.timerEls.readout.textContent = 'Set a duration';
+            this.timerEls.readout.classList.add('warn');
+            setTimeout(() => this.renderTimer(), 1800);
+            return;
+        }
+        this.startTimer(total);
+    }
+
+    startTimer(totalMinutes) {
+        if (!(totalMinutes > 0) || totalMinutes > MAX_TIMER_MIN) return;
+        this.cancelTimer({ silent: true });
+
+        this.timer.endsAt = Date.now() + totalMinutes * 60000;
+        this.timer.remainingMs = totalMinutes * 60000;
+        this.timer.fadingOut = false;
+        this.timer.warned = false;
+        this.timer.tickId = setInterval(() => this.tickTimer(), 250);
+
+        this.timerEls.readout.classList.remove('warn');
+        this.timerEls.toggle.textContent = 'Cancel';
+        this.timerEls.toggle.classList.add('active');
+        this.renderTimer();
+        this.restoreMixAfterTimer();
+    }
+
+    // If a previous run faded the mix to silence, bring the level back so
+    // starting a new timer does not leave the user with a silent page.
+    restoreMixAfterTimer() {
+        const el = document.querySelector('.master-volume');
+        const remembered = this.timer.masterBeforeFade ?? MASTER_DEFAULT;
+        if (parseFloat(el.value) >= 1) return;   // user already has level
+        el.value = remembered;
+        this.masterVolume = remembered / 100;
+        this.updateAllVolumes();
+        this.updateMasterReadout();
+    }
+
+    tickTimer() {
+        if (this.timer.endsAt === null) return;
+        this.timer.remainingMs = this.timer.endsAt - Date.now();
+
+        if (this.timer.remainingMs <= TIMER_FADE_MS && !this.timer.fadingOut) {
+            this.beginTimerFadeout();
+            return;
+        }
+        this.renderTimer();
+    }
+
+    // Fade the whole mix over the final stretch instead of cutting it dead —
+    // an abrupt stop is jarring when the point of the timer is falling asleep.
+    beginTimerFadeout() {
+        this.timer.fadingOut = true;
+        clearInterval(this.timer.tickId);
+        this.timer.tickId = null;
+
+        // The fade rides on master (the mix's single gain stage), so remember
+        // where the user had it and put it back afterwards.
+        const el = document.querySelector('.master-volume');
+        this.timer.masterBeforeFade = parseFloat(el.value);
+
+        this.fadeMasterTo(0, TIMER_FADE_MS, () => {
+            this.stopAll();
+            this.timer.endsAt = null;
+            this.timer.remainingMs = 0;
+            this.timer.fadingOut = false;
+            this.timerEls.readout.textContent = 'Off';
+            this.timerEls.readout.classList.remove('warn');
+            this.timerEls.toggle.textContent = 'Start';
+            this.timerEls.toggle.classList.remove('active');
+            this.renderTimer();
+            this.updateStatus();
+        });
+    }
+
+    cancelTimer({ silent = false } = {}) {
+        clearInterval(this.timer.tickId);
+        this.timer.tickId = null;
+        const wasFading = this.timer.fadingOut;
+        this.timer.endsAt = null;
+        this.timer.remainingMs = 0;
+        this.timer.fadingOut = false;
+
+        if (!silent) {
+            // Cancelling mid-fade must hand the master level back.
+            if (wasFading) this.fadeMasterTo(this.timer.masterBeforeFade ?? MASTER_DEFAULT, FADE_MS);
+            this.timerEls.toggle.textContent = 'Start';
+            this.timerEls.toggle.classList.remove('active');
+            this.timerEls.readout.classList.remove('warn');
+            this.renderTimer();
+        }
+    }
+
+    fadeMasterTo(percent, ms, done) {
+        const el = document.querySelector('.master-volume');
+        clearInterval(this._masterRamp);
+        const from = parseFloat(el.value);
+        const to = clamp(percent, 0, 100);
+        if (!ms || Math.abs(from - to) < 0.01) {
+            el.value = to;
+            this.masterVolume = to / 100;
+            this.updateAllVolumes();
+            this.updateMasterReadout();
+            done && done();
+            return;
+        }
+        const steps = 40;
+        let i = 0;
+        this._masterRamp = setInterval(() => {
+            i++;
+            const v = from + (to - from) * (i / steps);
+            el.value = v;
+            this.masterVolume = v / 100;
+            this.updateAllVolumes();
+            this.updateMasterReadout();
+            if (i >= steps) {
+                clearInterval(this._masterRamp);
+                this._masterRamp = null;
+                done && done();
+            }
+        }, ms / steps);
+    }
+
+    stopAll() {
+        for (const key of Object.keys(this.sounds)) {
+            this.stopSound(key);
+            this.sounds[key].isPlaying = false;
+            this.sounds[key].currentIntensity = 0;
+            const card = document.querySelector(`.card[data-sound="${key}"]`);
+            const knob = card && card.querySelector('.knob');
+            if (knob) this.paintKnob(knob, 0);
+            else if (card) this.updateCardReadout(card);
+        }
+        this.updateStatus();
+    }
+
+    renderTimer() {
+        const readout = this.timerEls.readout;
+        if (!readout) return;
+
+        if (this.timer.fadingOut) {
+            readout.textContent = 'Fading out…';
+            readout.classList.add('on');
+            return;
+        }
+        if (this.timer.endsAt === null) {
+            readout.textContent = 'Off';
+            readout.classList.remove('on');
+            return;
+        }
+        readout.classList.add('on');
+        readout.textContent = formatDuration(Math.max(0, this.timer.remainingMs));
     }
 
     // ── presets ────────────────────────────────────────────────────────────
