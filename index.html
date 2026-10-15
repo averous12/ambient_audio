@@ -11,41 +11,56 @@
 <body>
     <header>
         <h1>Ambient Mixer</h1>
-        <p>Layer your own soundscape — mix the channels, dial the intensity</p>
+        <p>Layer rain, wind, water and wildlife into your own soundscape</p>
     </header>
 
-    <div class="container">
-        <div class="card-horizontal preset-controls">
-            <span class="icon" aria-hidden="true">💾</span>
-            <input type="text" id="preset-name" placeholder="Preset name"
-                   class="preset-input" maxlength="40" aria-label="Preset name">
-            <button id="save-preset" class="preset-button" type="button">Save</button>
-            <select id="preset-select" class="preset-select" aria-label="Load a preset">
-                <option value="">Load a preset…</option>
-            </select>
-            <button id="delete-preset" class="preset-button delete" type="button">Delete</button>
-        </div>
-
-        <section class="grid" id="sound-grid" aria-label="Sound channels">
-            <!-- Channel cards are generated from SOUND_CONFIG -->
+    <main class="container">
+        <section class="panel panel--presets" aria-label="Presets">
+            <div class="panel-head">
+                <span class="panel-icon" data-icon="save"></span>
+                <h2>Presets</h2>
+            </div>
+            <div class="panel-body">
+                <input type="text" id="preset-name" placeholder="Name this mix…"
+                       class="preset-input" maxlength="40" aria-label="Preset name">
+                <button id="save-preset" class="preset-button" type="button">Save</button>
+                <select id="preset-select" class="preset-select" aria-label="Load a preset">
+                    <option value="">Load a preset…</option>
+                </select>
+                <button id="delete-preset" class="preset-button delete" type="button">Delete</button>
+            </div>
         </section>
 
-        <div class="card-horizontal">
-            <span class="icon" aria-hidden="true">🎛️</span>
+        <section class="channels" aria-label="Sound channels">
+            <div class="grid" id="sound-grid">
+                <!-- Channel cards are generated from SOUND_CONFIG -->
+            </div>
+        </section>
+
+        <section class="panel panel--master" aria-label="Master volume">
             <div class="master-group">
+                <span class="panel-icon" data-icon="master"></span>
                 <label for="master-volume">Master</label>
                 <input type="range" id="master-volume" class="slider-horizontal master-volume"
                        min="0" max="100" value="70">
                 <output class="master-value" for="master-volume">70%</output>
             </div>
-        </div>
-    </div>
+        </section>
+
+        <section class="panel panel--status" aria-label="Now playing" hidden id="status-panel">
+            <div class="panel-head">
+                <h2>Now playing</h2>
+            </div>
+            <div class="panel-body" id="status-body"></div>
+        </section>
+    </main>
 
     <footer>
-        <p>
-            Drag a dial vertically to set intensity · <kbd>↑</kbd><kbd>↓</kbd> to nudge ·
-            double-click to centre · presets are saved in this browser
+        <p class="hint">
+            Drag a dial <strong>vertically</strong> to set intensity ·
+            <kbd>↑</kbd><kbd>↓</kbd> nudge · double-click centres · presets save in this browser
         </p>
+        <p class="credit">Audio samples bundled with the project · runs entirely offline</p>
     </footer>
 
     <script src="audio-player.js"></script>

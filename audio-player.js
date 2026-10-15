@@ -1,11 +1,53 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //  Ambient Mixer — sound definitions + player
 //  Add a sound by adding an entry to SOUND_CONFIG; the UI builds itself.
+//  Icons are inline SVG (24×24, stroke-based) so every channel renders with one
+//  consistent visual language and no icon-font or network dependency.
 // ═══════════════════════════════════════════════════════════════════════════
+
+const ICON = (paths) =>
+    `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+          aria-hidden="true">${paths}</svg>`;
+
+const ICONS = {
+    rain: ICON(`
+        <path d="M7 15.5a4.5 4.5 0 0 1 .6-8.96 5.5 5.5 0 0 1 10.5 1.2A3.9 3.9 0 0 1 18 15.5"/>
+        <path d="M8.5 18.5 7.5 21"/><path d="M12 18.5l-1 2.5"/><path d="M15.5 18.5l-1 2.5"/>`),
+    thunder: ICON(`<path d="M13.5 2 5 13.5h5.5L9.5 22 18 10.5h-5.5z"/>`),
+    wind: ICON(`
+        <path d="M3 8h10.5a2.75 2.75 0 1 0-2.75-2.75"/>
+        <path d="M3 12.5h14.5a2.75 2.75 0 1 1-2.75 2.75"/>
+        <path d="M3 17h8"/>`),
+    forest: ICON(`
+        <path d="M12 2.5 7 10h3l-4 6.5h5V22h2v-5.5h5L14 10h3z"/>`),
+    river: ICON(`
+        <path d="M3 7.5c2.5-2 5-2 7.5 0s5 2 7.5 0"/>
+        <path d="M3 12.5c2.5-2 5-2 7.5 0s5 2 7.5 0"/>
+        <path d="M3 17.5c2.5-2 5-2 7.5 0s5 2 7.5 0"/>`),
+    birds: ICON(`
+        <path d="M3.5 13.5c0-3.3 2.6-5.9 5.8-5.9.7 0 1.4.13 2 .38"/>
+        <path d="M11.3 8a3.2 3.2 0 1 1 4.3 4.6"/>
+        <path d="M15.6 12.6H6.2a1.9 1.9 0 0 1-1.4-.5"/>
+        <path d="M13.8 5.6 16 3.2"/><path d="M15.9 7.4 19.4 6"/>
+        <path d="M9.6 17.5 8.4 20"/>`),
+    frogs: ICON(`
+        <circle cx="7.8" cy="7.4" r="2.4"/><circle cx="16.2" cy="7.4" r="2.4"/>
+        <path d="M3.8 13.6c0 3.4 3.6 6 8.2 6s8.2-2.6 8.2-6"/>
+        <path d="M8.6 15.8c1 .55 2.15.85 3.4.85s2.4-.3 3.4-.85"/>`),
+    save: ICON(`
+        <path d="M5 3.5h11L19.5 7v13.5h-15z"/>
+        <path d="M8 3.5v6h7v-6"/><path d="M8 20.5v-5h8v5"/>`),
+    master: ICON(`
+        <path d="M5 21V14"/><path d="M5 10V3"/><path d="M12 21v-9"/>
+        <path d="M12 8V3"/><path d="M19 21v-5"/><path d="M19 12V3"/>
+        <path d="M2.5 14h5"/><path d="M9.5 8h5"/><path d="M16.5 16h5"/>`)
+};
+
 const SOUND_CONFIG = {
     rain: {
         name: "Rain",
-        icon: "🌧",
+        icon: ICONS.rain,
         variants: [
             { url: 'audio/rain_low.wav', intensityRange: [1, 20], label: "Light Rain" },
             { url: 'audio/rain_mediumlow.wav', intensityRange: [21, 40], label: "Medium-Light Rain" },
@@ -18,7 +60,7 @@ const SOUND_CONFIG = {
     },
     thunder: {
         name: "Thunder",
-        icon: "⚡",
+        icon: ICONS.thunder,
         variants: [
             { url: 'audio/thunder_0.wav', label: "Distant Rumble" },
             { url: 'audio/thunder_1.wav', label: "Sharp Crack" },
@@ -36,7 +78,7 @@ const SOUND_CONFIG = {
     },
     wind: {
         name: "Wind",
-        icon: "🍃",
+        icon: ICONS.wind,
         variants: [
             { url: 'audio/wind_1.wav', intensityRange: [1, 25], label: "Light Breeze" },
             { url: 'audio/wind_2.wav', intensityRange: [26, 50], label: "Gentle Wind" },
@@ -48,7 +90,7 @@ const SOUND_CONFIG = {
     },
     forest: {
         name: "Forest",
-        icon: "🌲",
+        icon: ICONS.forest,
         variants: [
             { url: 'audio/forest_2.wav', label: "Forest Ambience" }
         ],
@@ -57,7 +99,7 @@ const SOUND_CONFIG = {
     },
     river: {
         name: "River",
-        icon: "🌊",
+        icon: ICONS.river,
         variants: [
             { url: 'audio/river.wav', label: "Flowing River" }
         ],
@@ -66,7 +108,7 @@ const SOUND_CONFIG = {
     },
     birds: {
         name: "Birds",
-        icon: "🐦",
+        icon: ICONS.birds,
         variants: [
             { url: 'audio/bird_1.wav', label: "Bird Song 1" },
             { url: 'audio/bird_2.wav', label: "Bird Song 2" },
@@ -80,7 +122,7 @@ const SOUND_CONFIG = {
     },
     frogs: {
         name: "Frogs",
-        icon: "🐸",
+        icon: ICONS.frogs,
         variants: [
             { url: 'audio/frog_1.mp3', label: "Frog 1" },
             { url: 'audio/frog_2.mp3', label: "Frog 2" },
@@ -130,16 +172,27 @@ class AudioPlayer {
         }
 
         this.createSoundControls();
+        this.injectPanelIcons();
+        this.updateMasterReadout();
 
         document.querySelector('.master-volume').addEventListener('input', (e) => {
             this.masterVolume = e.target.value / 100;
             this.updateAllVolumes();
             this.updateMasterReadout();
         });
-        this.updateMasterReadout();
 
         this.setupPresetControls();
         this.loadPresetList();
+        this.updateStatus();
+    }
+
+    // Panel chrome icons are declared in markup as <span data-icon="…"> so the
+    // HTML stays readable and the SVG lives in one place.
+    injectPanelIcons() {
+        document.querySelectorAll('[data-icon]').forEach(el => {
+            const path = ICONS[el.dataset.icon];
+            if (path) el.innerHTML = path;
+        });
     }
 
     preloadAudio(soundKey) {
@@ -209,12 +262,22 @@ class AudioPlayer {
             if (volume > 0 && !sound.isPlaying) this.startContinuous(soundKey);
             else if (volume === 0 && sound.isPlaying) this.fadeOutAndStop(soundKey);
             else if (sound.currentVariant) this.applyGain(soundKey, sound.currentVariant);
+            this.refreshUI(soundKey);
             return;
         }
 
         // Intensity sounds only re-gain what is already playing; dragging a
         // volume slider never silently starts them.
         if (sound.currentVariant) this.applyGain(soundKey, sound.currentVariant);
+        this.refreshUI(soundKey);
+    }
+
+    // Push a channel's state into its card chrome and the status panel. Kept in
+    // one place so no path can update the audio without the UI following.
+    refreshUI(soundKey) {
+        const card = document.querySelector(`.card[data-sound="${soundKey}"]`);
+        if (card) this.updateCardReadout(card);
+        this.updateStatus();
     }
 
     updateMasterReadout() {
@@ -226,6 +289,7 @@ class AudioPlayer {
         for (const [key, sound] of Object.entries(this.sounds)) {
             if (sound.currentVariant) this.applyGain(key, sound.currentVariant);
         }
+        this.updateStatus();
     }
 
     // ── intensity ──────────────────────────────────────────────────────────
@@ -236,13 +300,17 @@ class AudioPlayer {
         sound.isPlaying = intensity > 0;
 
         this.stopSound(soundKey);
-        if (intensity === 0) return;
+        if (intensity === 0) {
+            this.refreshUI(soundKey);
+            return;
+        }
 
         switch (sound.config.behavior) {
             case 'layered':    this.playLayered(soundKey, intensity); break;
             case 'random':     this.startRandom(soundKey, intensity); break;
             case 'continuous': this.startContinuous(soundKey);        break;
         }
+        this.refreshUI(soundKey);
     }
 
     // One looping variant; gain follows the volume slider.
@@ -327,12 +395,13 @@ class AudioPlayer {
     fadeOutAndStop(soundKey) {
         const sound = this.sounds[soundKey];
         const variant = sound.currentVariant;
-        if (!variant) { sound.isPlaying = false; return; }
+        if (!variant) { sound.isPlaying = false; this.refreshUI(soundKey); return; }
         this.rampGain(soundKey, variant, 0, FADE_MS);
         setTimeout(() => {
             if (sound.currentVariant === variant && sound.currentVolume === 0) {
                 this.stopSound(soundKey);
                 sound.isPlaying = false;
+                this.refreshUI(soundKey);
             }
         }, FADE_MS + 30);
     }
@@ -371,7 +440,7 @@ class AudioPlayer {
                 : `<div class="knob-slot" aria-hidden="true"></div>`;
 
             card.innerHTML = `
-                <div class="icon" aria-hidden="true">${config.icon}</div>
+                <div class="icon">${config.icon}</div>
                 <div class="name">${config.name}</div>
                 <input type="range" class="slider volume" min="0" max="100"
                        value="${config.defaultVolume ?? 0}"
@@ -405,14 +474,70 @@ class AudioPlayer {
         knob.style.setProperty('--pct', (value / 100 * (KNOB_SWEEP / 360) * 100).toFixed(4) + '%');
         knob.dataset.value = value;
         knob.setAttribute('aria-valuenow', value);
-        const card = knob.closest('.card');
-        if (card) {
-            const readout = card.querySelector('.readout');
-            if (readout) {
-                readout.textContent = value === 0 ? 'Off' : value + '%';
-                readout.classList.toggle('on', value > 0);
-            }
+        this.updateCardReadout(knob.closest('.card'));
+    }
+
+    // The dial's readout names the variant the value selects (e.g. "Heavy Rain")
+    // rather than repeating the number the dial already shows — that label is
+    // far more useful when three channels are layered.
+    updateCardReadout(card) {
+        if (!card) return;
+        const key = card.dataset.sound;
+        const sound = this.sounds[key];
+        const knob = card.querySelector('.knob');
+        const readout = card.querySelector('.readout');
+        if (!sound || !readout) return;
+
+        if (!knob) {                        // continuous channel: no dial
+            const on = sound.isPlaying && sound.currentVolume > 0;
+            readout.textContent = on ? 'Playing' : '';
+            readout.classList.toggle('on', on);
+            if (on) card.classList.add('is-active'); else card.classList.remove('is-active');
+            return;
         }
+
+        const value = parseInt(knob.dataset.value, 10) || 0;
+        if (value === 0) {
+            readout.textContent = 'Off';
+            readout.classList.remove('on');
+            card.classList.remove('is-active');
+            return;
+        }
+        // Name the band; fall back to the percentage for random channels, whose
+        // variants are individual hits rather than intensity bands.
+        const variant = sound.variants.find(v =>
+            v.intensityRange && value >= v.intensityRange[0] && value <= v.intensityRange[1]);
+        readout.textContent = variant ? variant.label : value + '%';
+        readout.classList.add('on');
+        card.classList.add('is-active');
+    }
+
+    // A compact "what am I hearing" summary. Cheap to update, and it makes a
+    // layered scene legible at a glance.
+    updateStatus() {
+        const panel = document.getElementById('status-panel');
+        const body = document.getElementById('status-body');
+        if (!panel || !body) return;
+
+        const active = Object.entries(this.sounds).filter(([, s]) => s.isPlaying);
+        if (!active.length) {
+            panel.hidden = true;
+            body.innerHTML = '';
+            return;
+        }
+        panel.hidden = false;
+        body.innerHTML = active.map(([key, sound]) => {
+            const v = sound.currentVariant;
+            // Continuous channels have no intensity, so they report "Playing";
+            // everything else names the band the dial selected.
+            const label = v && v.intensityRange ? v.label
+                : (sound.currentIntensity > 0 ? sound.currentIntensity + '%' : 'Playing');
+            return `<span class="tag" data-sound="${key}">
+                        <span class="tag-icon">${sound.config.icon}</span>
+                        <span class="tag-name">${sound.config.name}</span>
+                        <span class="tag-detail">${label}</span>
+                    </span>`;
+        }).join('');
     }
 
     setupKnob(knob) {
@@ -537,8 +662,10 @@ class AudioPlayer {
                 // Continuous: no intensity to restore, isPlaying decides.
                 if (soundState.isPlaying && volume > 0) this.startContinuous(key);
                 else { this.stopSound(key); sound.isPlaying = false; }
+                this.refreshUI(key);
             }
         }
+        this.updateStatus();
     }
 
     saveCurrentPreset() {
