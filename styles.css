@@ -1,280 +1,512 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Ambient Mixer — neumorphic control panel
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    --accent: #07ab74;
+    --accent-dark: #059862;
+    --danger: #e74c3c;
+    --danger-dark: #c0392b;
+
+    --surface: #d0d0d0;
+    --light: #e0e0e0;
+    --mid: #c0c0c0;
+    --light-shadow: #f0f0f0;
+    --dark-shadow: #b0b0b0;
+
+    /* One lighting direction for the whole panel: raised from the top-left. */
+    --raise: 8px 8px 15px var(--dark-shadow), -8px -8px 15px var(--light-shadow);
+    --raise-sm: 5px 5px 10px var(--dark-shadow), -5px -5px 10px var(--light-shadow);
+    --raise-xs: 2px 2px 5px var(--dark-shadow), -1px -1px 3px var(--light-shadow);
+    --inset: inset 3px 3px 5px var(--dark-shadow), inset -3px -3px 5px var(--light-shadow);
+
+    --slider-h: 132px;   /* every card uses the same track length */
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    background: #d0d0d0;
-    color: #333;
+html {
+    -webkit-text-size-adjust: 100%;
 }
 
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    line-height: 1.6;
+    background: var(--surface);
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── header ──────────────────────────────────────────────────────────────── */
 header {
     background: linear-gradient(145deg, #b8b8b8, #e0e0e0);
     color: #333;
-    padding: 1.5rem 0;
+    padding: 1.75rem 1rem 1.5rem;
     text-align: center;
-    box-shadow: 5px 5px 10px #b0b0b0, 
-                -5px -5px 10px #f0f0f0;
+    box-shadow: var(--raise-sm);
     border-radius: 0 0 15px 15px;
-    margin-bottom: 2rem;
-    border-bottom: 3px solid #07ab74;
+    border-bottom: 3px solid var(--accent);
 }
 
+header h1 {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    letter-spacing: -0.02em;
+    font-weight: 650;
+}
+
+header p {
+    color: #5a5a5a;
+    font-size: 0.9rem;
+    margin-top: 0.15rem;
+}
+
+/* ── layout ──────────────────────────────────────────────────────────────── */
 .container {
-    max-width: 1200px;
-    margin: 2rem auto;
+    width: 100%;
+    max-width: 1080px;
+    margin: 2rem auto 0;
     padding: 0 1rem;
-    justify-content: center;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    flex: 1 0 auto;
 }
 
 .grid {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    width: 100%;
 }
 
+/* ── channel cards ───────────────────────────────────────────────────────── */
 .card {
-    background: linear-gradient(145deg, #e0e0e0, #c0c0c0);
-    padding: 1rem;
+    background: linear-gradient(145deg, var(--light), var(--mid));
+    padding: 1rem 0.9rem 0.85rem;
     border-radius: 15px;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 8px 8px 15px #b0b0b0, 
-                -8px -8px 15px #f0f0f0;
-    transition: all 0.3s ease;
-    width: 100px;
+    gap: 0.4rem;
+    box-shadow: var(--raise);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+    width: 108px;
     border: 2px solid rgba(7, 171, 116, 0.3);
 }
 
 .card:hover {
-    box-shadow: 4px 4px 8px #b0b0b0, 
-                -4px -4px 8px #f0f0f0;
+    box-shadow: var(--raise-sm);
     border-color: rgba(7, 171, 116, 0.6);
 }
 
-.card-horizontal {
-    background: linear-gradient(145deg, #e0e0e0, #c0c0c0);
-    padding: 1.5rem 2rem;
-    border-radius: 15px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    margin: 3rem 0;
-    min-width: 30%;
-    max-width: 90%;
-    box-shadow: 12px 12px 24px #b0b0b0, 
-                -12px -12px 24px #f0f0f0,
-                0 0 0 4px rgba(7, 171, 116, 0.2);
-    gap: 1.5rem;
-    border: 2px solid #07ab74;
-    position: relative;
+.card .icon {
+    font-size: 1.9rem;
+    line-height: 1.2;
+    filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.18));
 }
 
-.card-horizontal::before {
-    content: '';
-    position: absolute;
-    top: -5px;
-    left: -5px;
-    right: -5px;
-    bottom: -5px;
-    border-radius: 18px;
-    background: linear-gradient(145deg, rgba(7, 171, 116, 0.1), rgba(7, 171, 116, 0.3));
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+.card .name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #4a4a4a;
+    text-transform: uppercase;
 }
 
-.card-horizontal:hover::before {
-    opacity: 1;
-}
-
-.icon {
-    font-size: 2rem;
-    color: #555;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.2), 
-                -1px -1px 2px rgba(255,255,255,0.8);
-}
-
-.card-horizontal .icon {
-    font-size: 2.5rem;
-    color: #07ab74;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.1), 
-                -1px -1px 2px rgba(255,255,255,0.5);
-}
-
+/* ── vertical volume sliders ─────────────────────────────────────────────── */
 .slider {
-    width: 8px;
-    height: 100px;
-    writing-mode: bt-lr;
-    -webkit-appearance: slider-vertical;
-    margin: 1rem auto;
-    background: linear-gradient(145deg, #c0c0c0, #e0e0e0);
+    -webkit-appearance: none;
+    appearance: none;
+    /* Modern vertical slider: keeps working without the deprecated
+       -webkit-appearance: slider-vertical that Chromium is retiring. */
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 14px;
+    height: var(--slider-h);
+    margin: 0.25rem auto;
+    background: linear-gradient(145deg, var(--mid), var(--light));
     border-radius: 10px;
-    box-shadow: inset 3px 3px 5px #b0b0b0, 
-                inset -3px -3px 5px #f0f0f0;
+    box-shadow: var(--inset);
     outline: none;
+    cursor: pointer;
 }
 
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: var(--raise-xs);
+    cursor: grab;
+    transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.slider:hover::-webkit-slider-thumb {
+    transform: scale(1.08);
+}
+
+.slider:active::-webkit-slider-thumb {
+    cursor: grabbing;
+    background: var(--accent-dark);
+}
+
+.slider:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.slider::-moz-range-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #07ab74;
-    box-shadow: 2px 2px 4px rgba(0,0,0,0.3),
-                -1px -1px 3px rgba(255,255,255,0.8);
-    cursor: pointer;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: var(--raise-xs);
+    cursor: grab;
+}
+
+.slider::-moz-range-track {
+    width: 14px;
+    background: transparent;
+    border: none;
+}
+
+/* ── intensity knob ──────────────────────────────────────────────────────── */
+.knob {
+    --angle: -135deg;
+    --pct: 0%;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--light), var(--mid));
+    box-shadow: var(--raise-xs), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+    position: relative;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+}
+
+/* Sweep arc drawn as a THIN RING (not a filled pie) so the dial reads as a
+   gauge and the pointer stays legible at every value. --pct is the filled
+   fraction of the 270° travel, set from JS. */
+.knob::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from -135deg,
+            var(--accent) 0 var(--pct),
+            transparent var(--pct));
+    /* Punch out the middle: arc thickness is (--ring) px. */
+    --ring: 4px;
+    -webkit-mask: radial-gradient(closest-side,
+            transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring)));
+    mask: radial-gradient(closest-side,
+            transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring)));
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.knob::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    border-radius: 50%;
+    /* Deliberately near-black: the pointer must contrast with BOTH the grey
+       dial face and the green arc it eventually sits on top of. */
+    background: #2f3a36;
+    box-shadow: 0 0 0 2px #f4f4f4;
+    /* The dot sits at 12 o'clock and orbits the dial centre (26px from the top
+       of the knob) at a 16px radius; --angle alone drives it. */
+    transform: rotate(var(--angle));
+    transform-origin: 50% 20px;
+    transition: none;
+}
+
+.knob[data-value]:not([data-value="0"])::after {
+    background: #234a3c;
+}
+
+.knob:hover {
+    box-shadow: var(--raise-sm), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.knob.active {
+    cursor: grabbing;
+    box-shadow: var(--inset);
+}
+
+.knob:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* Continuous channels have no intensity control. Rather than leave a hole (or
+   a placeholder that reads as "broken"), the card just reserves the same
+   vertical space so every slider track stays on one line. */
+.knob-slot {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+}
+
+.readout {
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    color: #8a8a8a;
+    min-height: 1.1em;
+    line-height: 1.1;
+}
+
+.readout.on {
+    color: var(--accent-dark);
+    font-weight: 600;
+}
+
+/* ── master + preset bar ─────────────────────────────────────────────────── */
+.card-horizontal {
+    background: linear-gradient(145deg, var(--light), var(--mid));
+    padding: 1.1rem 1.4rem;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 720px;
+    box-shadow: var(--raise);
+    border: 2px solid var(--accent);
+}
+
+.card-horizontal .icon {
+    font-size: 1.6rem;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.master-group {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.master-group label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #4a4a4a;
+    white-space: nowrap;
+}
+
+.master-value {
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-dark);
+    font-weight: 600;
+    min-width: 2.6em;
+    text-align: right;
 }
 
 .slider-horizontal {
-    width: 100%;
-    height: 12px;
-    margin: 0 1rem;
-    background: linear-gradient(145deg, #c0c0c0, #e0e0e0);
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1 1 auto;
+    min-width: 80px;
+    height: 14px;
+    background: linear-gradient(145deg, var(--mid), var(--light));
     border-radius: 10px;
-    box-shadow: inset 3px 3px 5px #b0b0b0, 
-                inset -3px -3px 5px #f0f0f0;
+    box-shadow: var(--inset);
     outline: none;
+    cursor: pointer;
 }
 
 .slider-horizontal::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: #07ab74;
-    box-shadow: 2px 2px 4px rgba(0,0,0,0.3),
-                -1px -1px 3px rgba(255,255,255,0.8);
-    cursor: pointer;
+    background: var(--accent);
     border: 2px solid #fff;
+    box-shadow: var(--raise-xs);
+    cursor: grab;
 }
 
-.knob {
-    width: 50px;
-    height: 50px;
+.slider-horizontal:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.slider-horizontal::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: linear-gradient(325deg, #e0e0e0, #c0c0c0);
-    box-shadow: -5px -5px 10px #b0b0b0, 
-                5px 5px 10px #f0f0f0,
-                inset -2px -2px 5px rgba(0,0,0,0.1),
-                inset 2px 2px 5px rgba(255,255,255,0.5);
-    position: relative;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    user-select: none;
-    touch-action: none;
-    transform-origin: center;
-    rotate: 180deg;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: var(--raise-xs);
 }
 
-.card-horizontal .knob {
-    width: 60px;
-    height: 60px;
-    margin-top: 0;
-    flex-shrink: 0;
-    border: 2px solid #07ab74;
-}
-
-.knob:after {
-    content: '';
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: #07ab74;
-    border-radius: 50%;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-
-.card-horizontal .knob:after {
-    width: 12px;
-    height: 12px;
-    top: 12px;
-    background: #fff;
-    border: 1px solid #07ab74;
-}
-
-/* Extended volume slider for cards without knob */
-.card.no-knob .slider {
-    height: 150px; /* Extended height */
-    margin: 1rem auto; /* Adjusted margin */
-}
-
-
-footer {
-    background: linear-gradient(145deg, #b0b0b0, #d0d0d0);
-    color: #333;
-    text-align: center;
-    padding: 1.5rem 0;
-    margin-top: 2rem;
-    box-shadow: 5px 5px 10px #b0b0b0, 
-                -5px -5px 10px #f0f0f0;
-    border-radius: 15px 15px 0 0;
-    border-top: 3px solid #07ab74;
-}
-
+/* ── presets ─────────────────────────────────────────────────────────────── */
 .preset-controls {
-    margin-top: 1rem;
-    padding: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.preset-input,
+.preset-select {
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--light);
+    box-shadow: var(--inset);
+    font: inherit;
+    font-size: 0.85rem;
+    color: #333;
+    outline: none;
 }
 
 .preset-input {
-    flex-grow: 1;
-    padding: 0.5rem;
-    border: 1px solid #07ab74;
-    border-radius: 5px;
-    background: #e0e0e0;
+    flex: 1 1 160px;
+    min-width: 0;
 }
 
 .preset-select {
-    flex-grow: 1;
-    padding: 0.5rem;
-    border: 1px solid #07ab74;
-    border-radius: 5px;
-    background: #e0e0e0;
+    flex: 1 1 140px;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.preset-input:focus-visible,
+.preset-select:focus-visible {
+    border-color: var(--accent-dark);
+    box-shadow: var(--inset), 0 0 0 3px rgba(7, 171, 116, 0.25);
 }
 
 .preset-button {
-    padding: 0.5rem 1rem;
-    background: #07ab74;
-    color: white;
+    padding: 0.5rem 1.1rem;
+    background: var(--accent);
+    color: #fff;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
-}
-
-.preset-button.delete {
-    background: #e74c3c;
+    box-shadow: var(--raise-xs);
+    transition: background 0.2s ease, transform 0.12s ease;
+    white-space: nowrap;
 }
 
 .preset-button:hover {
-    background: #059862;
+    background: var(--accent-dark);
+}
+
+.preset-button:active {
+    transform: translateY(1px);
+    box-shadow: var(--inset);
+}
+
+.preset-button:focus-visible {
+    outline: 2px solid var(--accent-dark);
+    outline-offset: 2px;
+}
+
+.preset-button.delete {
+    background: var(--danger);
 }
 
 .preset-button.delete:hover {
-    background: #c0392b;
+    background: var(--danger-dark);
 }
 
-.highlight {
-    animation: highlight-fade 1s;
+/* ── footer ──────────────────────────────────────────────────────────────── */
+footer {
+    background: linear-gradient(145deg, #b0b0b0, #d0d0d0);
+    color: #4a4a4a;
+    text-align: center;
+    font-size: 0.85rem;
+    padding: 1.25rem 1rem;
+    margin-top: 2.5rem;
+    box-shadow: var(--raise-sm);
+    border-radius: 15px 15px 0 0;
+    border-top: 3px solid var(--accent);
+    flex-shrink: 0;
 }
 
-@keyframes highlight-fade {
-    0% { background-color: rgba(7, 171, 116, 0.3); }
-    100% { background-color: transparent; }
+footer kbd {
+    font-family: inherit;
+    font-size: 0.78rem;
+    background: var(--light);
+    border: 1px solid #b8b8b8;
+    border-radius: 4px;
+    padding: 0.05em 0.35em;
+    box-shadow: 0 1px 0 #a8a8a8;
+}
+
+/* ── narrow screens ──────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+    .grid {
+        gap: 0.85rem;
+    }
+
+    .card {
+        width: 92px;
+        padding: 0.8rem 0.6rem 0.7rem;
+    }
+
+    :root {
+        --slider-h: 112px;
+    }
+
+    .card-horizontal {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+    }
+
+    .preset-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .preset-controls .icon {
+        align-self: center;
+    }
+
+    .preset-button,
+    .preset-input,
+    .preset-select {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition-duration: 0.01ms !important;
+    }
 }
