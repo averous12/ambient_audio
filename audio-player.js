@@ -155,6 +155,8 @@ const FADE_MS = 240;                                  // start/stop ramp
 const TIMER_FADE_MS = 12000;                           // sleep fade-out length
 const MAX_TIMER_MIN = 23 * 60 + 59;
 const MASTER_DEFAULT = 70;
+// Level a channel adopts when its dial is engaged while its slider is still at 0.
+const DEFAULT_CHANNEL_VOLUME = 65;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -198,6 +200,7 @@ class AudioPlayer {
                 config,
                 variants: [],
                 currentVariant: null,
+                loop: null,                     // active crossfade-loop state
                 intervals: [],
                 stashedVolume: defaultVolume,   // remembered across mute/unmute
                 currentVolume: defaultVolume / 100,
@@ -329,6 +332,110 @@ class AudioPlayer {
         this.updateStatus();
     }
 
+    // ── crossfaded looping ─────────────────────────────────────────────────
+    // `<audio loop>` restarts the clip at its own hard boundary, which clicks on
+    // every cycle (a 7.5s rain file ticks every 7.5 seconds). Instead each
+    // looping channel keeps TWO instances of the file and hands over across an
+    // equal-power fade that straddles the seam, so the boundary is always masked.
+    //
+    // Schedule is driven by each element's own position (not a shared wall clock),
+    // because media elements load and seek at different times and a global clock
+    // desyncs from the audio as soon as one of them buffers.
+
+    // Equal-power (sin/cos) shape: the pair sums to constant perceived power,
+    // whereas a linear crossfade dips audibly in the middle.
+    crossfadeGains(t) {
+        const x = clamp(t, 0, 1) * Math.PI / 2;
+        return [Math.cos(x), Math.sin(x)];
+    }
+
+    startCrossfadeLoop(soundKey, variant) {
+        const sound = this.sounds[soundKey];
+        this.stopCrossfadeLoop(soundKey);
+
+        const src = variant.url;
+        const A = new Audio(src);
+        const B = new Audio(src);
+        [A, B].forEach(el => { el.loop = false; el.preload = 'auto'; el.volume = 0; });
+
+        const st = {
+            a: A, b: B,
+            lead: A,           // which element is currently carrying the sound
+            fadeMs: 1400,      // provisional; refined once duration is known
+            running: true,
+            raf: null
+        };
+        sound.loop = st;
+
+        // Only start once the leading element knows its duration, otherwise the
+        // seam position would be computed against NaN.
+        const arm = () => {
+            if (!st.running || sound.loop !== st) return;
+            if (!(A.duration > 0)) { setTimeout(arm, 120); return; }
+
+            st.loopMs = A.duration * 1000;
+            st.fadeMs = clamp(st.loopMs * 0.2, 800, 2400);
+            this.seekTo(A, 0);
+            this.playElement(A);
+
+            // One rule: while the lead is inside its final fade window, the other
+            // copy plays from the top and the two crossfade. When the lead ends,
+            // the roles swap — so the seam is always covered by a rising copy.
+            const tick = () => {
+                if (!st.running || sound.loop !== st) return;
+
+                const level = this.targetGain(soundKey, variant);
+                const lead = st.lead;
+                const other = lead === A ? B : A;
+                const leadPos = lead.currentTime * 1000;
+                const fadeStart = st.loopMs - st.fadeMs;
+
+                if (leadPos >= fadeStart) {
+                    // Entering the seam: start the incoming copy once, then fade.
+                    if (other.paused) { this.seekTo(other, 0); this.playElement(other); }
+                    const t = (leadPos - fadeStart) / st.fadeMs;
+                    const [gLead, gTrail] = this.crossfadeGains(t);
+                    lead.volume = level * gLead;
+                    other.volume = level * gTrail;
+
+                    // Handover complete: the incoming copy is now the lead, and
+                    // the old one is rewound to serve as the next incoming copy.
+                    if (lead.ended || leadPos >= st.loopMs - 20) {
+                        this.seekTo(lead, 0);
+                        lead.volume = 0;
+                        st.lead = other;
+                    }
+                } else {
+                    lead.volume = level;
+                    if (!other.paused) { other.volume = 0; this.seekTo(other, 0); }
+                }
+
+                st.raf = requestAnimationFrame(tick);
+            };
+            st.raf = requestAnimationFrame(tick);
+        };
+        arm();
+    }
+
+    stopCrossfadeLoop(soundKey) {
+        const sound = this.sounds[soundKey];
+        const st = sound.loop;
+        if (!st) return;
+        st.running = false;
+        if (st.raf) cancelAnimationFrame(st.raf);
+        [st.a, st.b].forEach(el => {
+            el.pause();
+            this.seekTo(el, 0);
+            el.volume = 0;
+            el.src = '';          // release the decoder immediately
+        });
+        sound.loop = null;
+    }
+
+    seekTo(el, time) {
+        try { el.currentTime = time; } catch (_) { /* not seekable yet */ }
+    }
+
     // ── intensity ──────────────────────────────────────────────────────────
     setIntensity(soundKey, intensity) {
         const sound = this.sounds[soundKey];
@@ -357,13 +464,11 @@ class AudioPlayer {
         const variant = sound.variants[0];
         if (!variant) return;
 
-        variant.audio.loop = true;
-        try { variant.audio.currentTime = 0; } catch (_) { /* not seekable yet */ }
-        variant.audio.volume = 0;
+        // A continuous channel is started BY its volume slider, so the level is
+        // already set; no default needed here.
         sound.currentVariant = variant;
         sound.isPlaying = true;
-        this.playElement(variant.audio);
-        this.applyGain(soundKey, variant, { fade: true });
+        this.startCrossfadeLoop(soundKey, variant);
     }
 
     // Layered: pick the variant whose intensity band matches.
@@ -374,12 +479,24 @@ class AudioPlayer {
         );
         if (!variant) return;
 
-        variant.audio.loop = true;
-        try { variant.audio.currentTime = 0; } catch (_) { /* not seekable yet */ }
-        variant.audio.volume = 0;
+        // Engaging a dial on a channel whose volume is still at zero would
+        // otherwise produce visible movement and no sound, which reads as broken.
+        // Adopt the channel's remembered level so the dial always sounds.
+        if (sound.currentVolume <= 0) this.adoptStashedVolume(soundKey);
+
         sound.currentVariant = variant;
-        this.playElement(variant.audio);
-        this.applyGain(soundKey, variant, { fade: true });
+        this.startCrossfadeLoop(soundKey, variant);
+    }
+
+    // Bring a silent channel up to the level it last had (or a sane default) and
+    // reflect that in the slider, so UI and audio never disagree.
+    adoptStashedVolume(soundKey) {
+        const sound = this.sounds[soundKey];
+        const percent = sound.stashedVolume > 0 ? sound.stashedVolume : DEFAULT_CHANNEL_VOLUME;
+        sound.stashedVolume = percent;
+        sound.currentVolume = percent / 100;
+        const card = document.querySelector(`.card[data-sound="${soundKey}"]`);
+        if (card) card.querySelector('.volume').value = percent;
     }
 
     // Random: scattered one-shots, interval driven by intensity.
@@ -445,6 +562,7 @@ class AudioPlayer {
 
     stopSound(soundKey) {
         const sound = this.sounds[soundKey];
+        this.stopCrossfadeLoop(soundKey);
         sound.variants.forEach(variant => {
             clearInterval(variant._ramp);
             variant._ramp = null;

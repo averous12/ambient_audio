@@ -17,6 +17,25 @@ Open `index.html` in a browser. No build step, no server, no dependencies.
 | Birds | volume + intensity dial | scattered one-shots |
 | Frogs | volume + intensity dial | scattered one-shots |
 
+## Looping and seams
+
+The raw clips are bare loops with no clean boundary — `rain_mediumhigh.wav` is
+7.5s, so a plain `<audio loop>` clicks every 7.5 seconds as it hard-restarts.
+
+Instead each looping channel runs **two instances of its file** and hands over
+across an **equal-power crossfade** that straddles the seam: as one copy
+approaches its end it fades down while the other plays from the top and fades up
+on a sin/cos curve. Because the pair sums to constant power, the seam is masked
+rather than merely softened — there is no level dip in the middle of the fade.
+
+The schedule is driven by each element's own `currentTime`, not a shared wall
+clock: media elements load and buffer at different times, so a global clock
+desyncs from the audio as soon as one of them stalls.
+
+Looping channels (rain, wind, forest, river) use two elements each; one-shot
+channels (thunder, birds, frogs) do not loop at all. Stopping a channel pauses
+both copies, rewinds them, and clears their `src` so the decoder is released.
+
 ## Sleep timer
 
 Set hours and minutes, or tap a quick chip (15m–2h). The countdown shows as
