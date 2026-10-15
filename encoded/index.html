@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#d2d2d2">
+    <meta name="description" content="Ambient Mixer (encoded) — layer rain, thunder, wind, forest, river, birds and frogs into your own soundscape, with a sleep timer.">
+    <title>Ambient Mixer (encoded)</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="masthead">
+        <div class="masthead-inner">
+            <span class="mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 8h10.5a2.75 2.75 0 1 0-2.75-2.75"/>
+                    <path d="M3 12.5h14.5a2.75 2.75 0 1 1-2.75 2.75"/>
+                    <path d="M3 17h8"/>
+                </svg>
+            </span>
+            <div class="masthead-text">
+                <h1>Ambient Mixer</h1>
+                <p>Rain, wind, water and wildlife — layered, dialled, and timed</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="panel panel--transport" aria-label="Timer and presets">
+            <div class="transport">
+                <div class="transport-block">
+                    <div class="block-head">
+                        <span class="panel-icon" data-icon="timer"></span>
+                        <h2>Sleep timer</h2>
+                    </div>
+                    <div class="timer-row">
+                        <div class="timer-fields" role="group" aria-label="Timer duration">
+                            <label class="time-field">
+                                <input type="number" id="timer-hours" class="time-input"
+                                       min="0" max="23" value="0" inputmode="numeric"
+                                       aria-label="Hours">
+                                <span class="time-unit">hr</span>
+                            </label>
+                            <span class="time-colon" aria-hidden="true">:</span>
+                            <label class="time-field">
+                                <input type="number" id="timer-minutes" class="time-input"
+                                       min="0" max="59" value="30" inputmode="numeric"
+                                       aria-label="Minutes">
+                                <span class="time-unit">min</span>
+                            </label>
+                        </div>
+                        <button id="timer-toggle" class="preset-button" type="button">Start</button>
+                        <output id="timer-readout" class="timer-readout" aria-live="polite">Off</output>
+                    </div>
+                    <div class="timer-presets" role="group" aria-label="Quick durations">
+                        <button class="chip" type="button" data-timer-min="15">15m</button>
+                        <button class="chip" type="button" data-timer-min="30">30m</button>
+                        <button class="chip" type="button" data-timer-min="45">45m</button>
+                        <button class="chip" type="button" data-timer-min="60">1h</button>
+                        <button class="chip" type="button" data-timer-min="90">1h30</button>
+                        <button class="chip" type="button" data-timer-min="120">2h</button>
+                    </div>
+                </div>
+
+                <div class="transport-block">
+                    <div class="block-head">
+                        <span class="panel-icon" data-icon="save"></span>
+                        <h2>Presets</h2>
+                    </div>
+                    <div class="preset-row">
+                        <input type="text" id="preset-name" placeholder="Name this mix…"
+                               class="preset-input" maxlength="40" aria-label="Preset name">
+                        <button id="save-preset" class="preset-button" type="button">Save</button>
+                    </div>
+                    <div class="preset-row">
+                        <select id="preset-select" class="preset-select" aria-label="Load a preset">
+                            <option value="">Load a preset…</option>
+                        </select>
+                        <button id="delete-preset" class="preset-button delete" type="button">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="channels" aria-label="Sound channels">
+            <div class="grid" id="sound-grid">
+                <!-- Channel cards are generated from SOUND_CONFIG -->
+            </div>
+        </section>
+
+        <section class="panel panel--master" aria-label="Master volume">
+            <div class="master-group">
+                <span class="panel-icon" data-icon="master"></span>
+                <label for="master-volume">Master</label>
+                <input type="range" id="master-volume" class="slider-horizontal master-volume"
+                       min="0" max="100" value="70">
+                <output class="master-value" for="master-volume">70%</output>
+            </div>
+        </section>
+
+        <section class="panel panel--status" aria-label="Now playing" hidden id="status-panel">
+            <div class="panel-head">
+                <span class="panel-icon" data-icon="play"></span>
+                <h2>Now playing</h2>
+            </div>
+            <div class="panel-body" id="status-body"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p class="hint">
+            Drag a dial <strong>vertically</strong> to set intensity ·
+            <kbd>↑</kbd><kbd>↓</kbd> nudge · double-click centres · presets save in this browser
+        </p>
+        <p class="credit">Audio samples bundled with the project · runs entirely offline</p>
+    </footer>
+
+    <script src="audio-player.js"></script>
+</body>
+</html>

@@ -5,6 +5,40 @@ birds and frogs into your own soundscape, then save it as a preset.
 
 Open `index.html` in a browser. No build step, no server, no dependencies.
 
+## Two builds
+
+| Directory | Assets | Size | Notes |
+|---|---|---|---|
+| `.` (root) | `audio/` — 23 WAV + 7 MP3 | 66.8 MB | original quality, double-click `index.html` |
+| `encoded/` | 29 Opus files | **4.2 MB** | fully self-contained, same app |
+
+Both are complete and independent. `encoded/` is the one to host: it is 16×
+smaller and contains its own copy of the HTML, CSS and JS, so it can be dropped
+onto any static host (or GitHub Pages) on its own.
+
+Opus is supported by every current browser (Chrome, Firefox, Edge, Safari 15+).
+If you need the older-WebKit fallback, `audio-encoded/mp3/` holds the same 29
+files as MP3; copy those in and rewrite the 28 `url:` entries in
+`encoded/audio-player.js` to `.mp3`.
+
+### Regenerating the encoded build
+
+```bash
+python encode-audio.py all          # audio/ -> audio-encoded/{opus,mp3}
+python verify-encodes.py opus mp3   # level + spectral check on every file
+```
+
+Both scripts require `ffmpeg` and `numpy` and never modify `audio/`.
+
+### Asset caveat
+
+`wind_3.wav` carries a −0.28 DC offset and 80% of its RMS is sub-20 Hz drift
+rather than audio, which is why it measured as the loudest channel while sounding
+like nothing. The encoder strips everything below 20 Hz before encoding, which
+fixes the level and also stops the codec wasting bitrate on an inaudible ramp.
+`frog_7` had 3.3 dB of the same. If you re-record `wind_3`, high-pass it at
+source.
+
 ## Channels
 
 | Channel | Control | Behaviour |
